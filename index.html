@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Solver de Desigualdades Lineales y Cuadráticas</title>
+<title>Solucionador y Graficador de Desigualdades</title>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding: 20px;
-    max-width: 600px;
+    max-width: 700px;
     margin: auto;
     background: #f0f4f8;
     color: #333;
@@ -25,6 +29,7 @@
     padding: 20px 25px;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+    margin-bottom: 30px;
   }
 
   label {
@@ -78,11 +83,17 @@
     font-size: 1.1rem;
     min-height: 40px;
   }
+
+  canvas {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+  }
 </style>
 </head>
 <body>
 
-<h1>Solucionador de Desigualdades</h1>
+<h1>Solucionador y Graficador de Desigualdades</h1>
 
 <form id="inequalityForm">
   <label>
@@ -137,10 +148,12 @@
     </label>
   </div>
 
-  <button type="submit">Resolver</button>
+  <button type="submit">Resolver y Graficar</button>
 </form>
 
 <div class="result" id="result"></div>
+
+<canvas id="grafica" width="700" height="350"></canvas>
 
 <script>
   const tipoSelect = document.getElementById('tipo');
@@ -148,6 +161,9 @@
   const coefCuadratica = document.getElementById('coefCuadratica');
   const form = document.getElementById('inequalityForm');
   const resultDiv = document.getElementById('result');
+  const ctx = document.getElementById('grafica').getContext('2d');
+
+  let chart = null;
 
   tipoSelect.addEventListener('change', () => {
     if (tipoSelect.value === 'lineal') {
@@ -168,11 +184,49 @@
       document.getElementById('c_cuad').required = true;
     }
     resultDiv.textContent = '';
+    if(chart) {
+      chart.destroy();
+      chart = null;
+    }
   });
+
+  // Función para invertir desigualdad (al multiplicar por negativo)
+  function invertirInequ(ineq) {
+    switch(ineq) {
+      case '<': return '>';
+      case '<=': return '>=';
+      case '>': return '<';
+      case '>=': return '<=';
+      default: return ineq;
+    }
+  }
+
+  // Función para evaluar la función en x para lineal o cuadrática
+  function f(x, tipo, a, b, c=0) {
+    if (tipo === 'lineal') return a*x + b;
+    else return a*x*x + b*x + c;
+  }
+
+  // Generar puntos para graficar en intervalo
+  function generarPuntos(tipo, a, b, c=0, xmin=-10, xmax=10, pasos=500) {
+    const xs = [];
+    const ys = [];
+    const step = (xmax - xmin) / pasos;
+    for(let i=0; i <= pasos; i++) {
+      let x = xmin + i*step;
+      xs.push(x);
+      ys.push(f(x, tipo, a, b, c));
+    }
+    return {xs, ys};
+  }
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     resultDiv.textContent = '';
+    if(chart) {
+      chart.destroy();
+      chart = null;
+    }
 
     if (tipoSelect.value === 'lineal') {
       const a = parseFloat(document.getElementById('a_lineal').value);
@@ -189,23 +243,12 @@
       }
 
       let x_sol = -b / a;
-      let sol = '';
-
-      function invertirInequ(ineq) {
-        switch(ineq) {
-          case '<': return '>';
-          case '<=': return '>=';
-          case '>': return '<';
-          case '>=': return '<=';
-          default: return ineq;
-        }
-      }
-
       let signo = ineq;
       if (a < 0) {
         signo = invertirInequ(ineq);
       }
 
+      let sol = '';
       switch(signo) {
         case '<':
           sol = `x < ${x_sol.toFixed(4)}`;
@@ -220,103 +263,9 @@
           sol = `x ≥ ${x_sol.toFixed(4)}`;
           break;
       }
-      resultDiv.textContent = `Solución: ${sol}`;
+      resultDiv.textContent = `El intervalo que satisface la desigualdad es: ${sol}`;
 
-    } else if (tipoSelect.value === 'cuadratica') {
-      const a = parseFloat(document.getElementById('a_cuad').value);
-      const b = parseFloat(document.getElementById('b_cuad').value);
-      const c = parseFloat(document.getElementById('c_cuad').value);
-      const ineq = document.getElementById('desigualdad_cuad').value;
+      // Graficar función y sombrear solución
+      const {xs, ys} = generarPuntos('lineal', a, b);
 
-      if (a === 0) {
-        resultDiv.textContent = 'No es una ecuación cuadrática. Cambia a lineal.';
-        return;
-      }
-
-      const discriminante = b*b - 4*a*c;
-      let sol = '';
-
-      function invertirInequ(ineq) {
-        switch(ineq) {
-          case '<': return '>';
-          case '<=': return '>=';
-          case '>': return '<';
-          case '>=': return '<=';
-          default: return ineq;
-        }
-      }
-
-      if (discriminante < 0) {
-        if ((a > 0 && (ineq === '<' || ineq === '<=')) ||
-            (a < 0 && (ineq === '>' || ineq === '>='))) {
-          sol = 'La desigualdad es verdadera para todo x.';
-        } else {
-          sol = 'La desigualdad no tiene solución real.';
-        }
-      } else if (discriminante === 0) {
-        const x0 = -b/(2*a);
-        if (ineq === '<') {
-          sol = 'No hay solución (la parábola toca el eje x en un solo punto y no es menor).';
-        } else if (ineq === '<=') {
-          sol = `x = ${x0.toFixed(4)}`;
-        } else if (ineq === '>') {
-          if (a > 0) {
-            sol = `x < ${x0.toFixed(4)} o x > ${x0.toFixed(4)}`;
-          } else {
-            sol = `No hay solución.`;
-          }
-        } else if (ineq === '>=') {
-          if (a > 0) {
-            sol = `x ≤ ${x0.toFixed(4)} o x ≥ ${x0.toFixed(4)}`;
-          } else {
-            sol = `No hay solución.`;
-          }
-        }
-      } else {
-        const sqrtD = Math.sqrt(discriminante);
-        const x1 = (-b - sqrtD)/(2*a);
-        const x2 = (-b + sqrtD)/(2*a);
-
-        const menor = Math.min(x1, x2);
-        const mayor = Math.max(x1, x2);
-
-        if (a > 0) {
-          switch(ineq) {
-            case '<':
-              sol = `x ∈ (${menor.toFixed(4)}, ${mayor.toFixed(4)})`;
-              break;
-            case '<=':
-              sol = `x ∈ [${menor.toFixed(4)}, ${mayor.toFixed(4)}]`;
-              break;
-            case '>':
-              sol = `x ∈ (-∞, ${menor.toFixed(4)}) ∪ (${mayor.toFixed(4)}, ∞)`;
-              break;
-            case '>=':
-              sol = `x ∈ (-∞, ${menor.toFixed(4)}] ∪ [${mayor.toFixed(4)}, ∞)`;
-              break;
-          }
-        } else {
-          switch(ineq) {
-            case '<':
-              sol = `x ∈ (-∞, ${menor.toFixed(4)}) ∪ (${mayor.toFixed(4)}, ∞)`;
-              break;
-            case '<=':
-              sol = `x ∈ (-∞, ${menor.toFixed(4)}] ∪ [${mayor.toFixed(4)}, ∞)`;
-              break;
-            case '>':
-              sol = `x ∈ (${menor.toFixed(4)}, ${mayor.toFixed(4)})`;
-              break;
-            case '>=':
-              sol = `x ∈ [${menor.toFixed(4)}, ${mayor.toFixed(4)}]`;
-              break;
-          }
-        }
-      }
-
-      resultDiv.textContent = `Solución: ${sol}`;
-    }
-  });
-</script>
-
-</body>
-</html>
+      // Determinar los índices que cumplen la desigualdad f
