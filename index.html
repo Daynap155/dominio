@@ -1,1 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Solver de Desigualdades Lineales y Cuadráticas</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+  label, select, input { display: block; margin: 10px 0; }
+  input[type="number"] { width: 100px; }
+  button { margin-top: 15px; padding: 10px 15px; }
+  .result { margin-top: 20px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Solucionador de Desigualdades</h1>
+
+<form id="inequalityForm">
+  <label>
+    Tipo de desigualdad:
+    <select id="tipo" required>
+      <option value="lineal">Lineal (ax + b &lt; 0)</option>
+      <option value="cuadratica">Cuadrática (ax² + bx + c &lt; 0)</option>
+    </select>
+  </label>
+
+  <div id="coefLineal">
+    <label>
+      a:
+      <input type="number" id="a_lineal" step="any" required />
+    </label>
+    <label>
+      b:
+      <input type="number" id="b_lineal" step="any" required />
+    </label>
+    <label>
+      Desigualdad:
+      <select id="desigualdad_lineal" required>
+        <option value="<">&lt;</option>
+        <option value="<=">&le;</option>
+        <option value=">">&gt;</option>
+        <option value=">=">&ge;</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="coefCuadratica" style="display:none;">
+    <label>
+      a:
+      <input type="number" id="a_cuad" step="any" />
+    </label>
+    <label>
+      b:
+      <input type="number" id="b_cuad" step="any" />
+    </label>
+    <label>
+      c:
+      <input type="number" id="c_cuad" step="any" />
+    </label>
+    <label>
+      Desigualdad:
+      <select id="desigualdad_cuad">
+        <option value="<">&lt;</option>
+        <option value="<=">&le;</option>
+        <option value=">">&gt;</option>
+        <option value=">=">&ge;</option>
+      </select>
+    </label>
+  </div>
+
+  <button type="submit">Resolver</button>
+</form>
+
+<div class="result" id="result"></div>
+
+<script>
+  const tipoSelect = document.getElementById('tipo');
+  const coefLineal = document.getElementById('coefLineal');
+  const coefCuadratica = document.getElementById('coefCuadratica');
+  const form = document.getElementById('inequalityForm');
+  const resultDiv = document.getElementById('result');
+
+  tipoSelect.addEventListener('change', () => {
+    if (tipoSelect.value === 'lineal') {
+      coefLineal.style.display = 'block';
+      coefCuadratica.style.display = 'none';
+      // Make lineal inputs required
+      document.getElementById('a_lineal').required = true;
+      document.getElementById('b_lineal').required = true;
+      document.getElementById('a_cuad').required = false;
+      document.getElementById('b_cuad').required = false;
+      document.getElementById('c_cuad').required = false;
+    } else {
+      coefLineal.style.display = 'none';
+      coefCuadratica.style.display = 'block';
+      // Make cuadratic inputs required
+      document.getElementById('a_lineal').required = false;
+      document.getElementById('b_lineal').required = false;
+      document.getElementById('a_cuad').required = true;
+      document.getElementById('b_cuad').required = true;
+      document.getElementById('c_cuad').required = true;
+    }
+    resultDiv.textContent = '';
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    resultDiv.textContent = '';
+
+    if (tipoSelect.value === 'lineal') {
+      const a = parseFloat(document.getElementById('a_lineal').value);
+      const b = parseFloat(document.getElementById('b_lineal').value);
+      const ineq = document.getElementById('desigualdad_lineal').value;
+
+      if (a === 0) {
+        if (eval(`${b} ${ineq} 0`)) {
+          resultDiv.textContent = 'La desigualdad es verdadera para cualquier x.';
+        } else {
+          resultDiv.textContent = 'La desigualdad no tiene solución.';
+        }
+        return;
+      }
+
+      // Resolver ax + b < 0 (o con otras desigualdades)
+      // Despejamos x: x < -b/a (según el signo de a y el tipo de desigualdad)
+
+      let x_sol = -b / a;
+      let sol = '';
+
+      // Para invertir desigualdad si a < 0
+      function invertirInequ(ineq) {
+        switch(ineq) {
+          case '<': return '>';
+          case '<=': return '>=';
+          case '>': return '<';
+          case '>=': return '<=';
+          default: return ineq;
+        }
+      }
+
+      let signo = ineq;
+      if (a < 0) {
+        signo = invertirInequ(ineq);
+      }
+
+      switch(signo) {
+        case '<':
+          sol = `x < ${x_sol.toFixed(4)}`;
+          break;
+        case '<=':
+          sol = `x ≤ ${x_sol.toFixed(4)}`;
+          break;
+        case '>':
+          sol = `x > ${x_sol.toFixed(4)}`;
+          break;
+        case '>=':
+          sol = `x ≥ ${x_sol.toFixed(4)}`;
+          break;
+      }
+      resultDiv.textContent = `Solución: ${sol}`;
+
+    } else if (tipoSelect.value === 'cuadratica') {
+      const a = parseFloat(document.getElementById('a_cuad').value);
+      const b = parseFloat(document.getElementById('b_cuad').value);
+      const c = parseFloat(document.getElementById('c_cuad').value);
+      const ineq = document.getElementById('desigualdad_cuad').value;
+
+      if (a === 0) {
+        resultDiv.textContent = 'No es una ecuación cuadrática. Cambia a lineal.';
+        return;
+      }
+
+      const discriminante = b*b - 4*a*c;
+      let sol = '';
+
+      // Función para invertir desigualdad al multiplicar por negativo
+      function invertirInequ(ineq) {
+        switch(ineq) {
+          case '<': return '>';
+          case '<=': return '>=';
+          case '>': return '<';
+          case '>=': return '<=';
+          default: return ineq;
+        }
+      }
+
+      if (discriminante < 0) {
+        // No raíces reales
+        if ((a > 0 && (ineq === '<' || ineq === '<=')) ||
+            (a < 0 && (ineq === '>' || ineq === '>='))) {
+          sol = 'La desigualdad es verdadera para todo x.';
+        } else {
+          sol = 'La desigualdad no tiene solución real.';
+        }
+      } else if (discriminante === 0) {
+        // Una raíz real
+        const x0 = -b/(2*a);
+        if (ineq === '<') {
+          sol = 'No hay solución (la parábola toca el eje x en un solo punto y no es menor).';
+        } else if (ineq === '<=') {
+          sol = `x = ${x0.toFixed(4)}`;
+        } else if (ineq === '>') {
+          if (a > 0) {
+            sol = `x < ${x0.toFixed(4)} o x > ${x0.toFixed(4)}`;
+          } else {
+            sol = `No hay solución.`;
+          }
+        } else if (ineq === '>=') {
+          if (a > 0) {
+            sol = `x ≤ ${x0.toFixed(4)} o x ≥ ${x0.toFixed(4)}`;
+          } else {
+            sol = `No hay solución.`;
+          }
+        }
+      } else {
+        // Dos raíces reales
+        const sqrtD = Math.sqrt(discriminante);
+        const x1 = (-b - sqrtD)/(2*a);
+        const x2 = (-b + sqrtD)/(2*a);
+
+        const menor = Math.min(x1, x2);
+        const mayor = Math.max(x1, x2);
+
+        if (a > 0) {
+          switch(ineq) {
+            case '<':
+              sol = `x ∈ (${menor.toFixed(4)}, ${mayor.toFixed(4)})`;
+              break;
+            case '<=':
+              sol = `x ∈ [${menor.toFixed(4)}, ${mayor.toFixed(4)}]`;
+              break;
+            case '>':
+              sol = `x ∈ (-∞, ${menor.toFixed(4)}) ∪ (${mayor.toFixed(4)}, ∞)`;
+              break;
+            case '>=':
+              sol = `x ∈ (-∞, ${menor.toFixed(4)}] ∪ [${mayor.toFixed(4)}, ∞)`;
+              break;
+          }
+        } else {
+          // a < 0, la parábola abre hacia abajo, las desigualdades cambian
+          switch(ineq) {
+            case '<':
+              sol = `x ∈ (-∞, ${menor.toFixed(4)}) ∪ (${mayor.toFixed(4)}, ∞)`;
+              break;
+            case '<=':
+              sol = `x ∈ (-∞, ${menor.toFixed(4)}] ∪ [${mayor.toFixed(4)}, ∞)`;
+              break;
+            case '>':
+              sol = `x ∈ (${menor.toFixed(4)}, ${mayor.toFixed(4)})`;
+              break;
+            case '>=':
+              sol = `x ∈ [${menor.toFixed(4)}, ${mayor.toFixed(4)}]`;
+              break;
+          }
+        }
+      }
+
+      resultDiv.textContent = `Solución: ${sol}`;
+    }
+  });
+</script>
+
+</body>
+</html>
 
