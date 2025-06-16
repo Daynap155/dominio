@@ -12,18 +12,16 @@
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding: 20px;
-    max-width: 700px;
+    max-width: 720px;
     margin: auto;
     background: #f0f4f8;
     color: #333;
   }
-
   h1 {
     text-align: center;
     color: #2c3e50;
     margin-bottom: 30px;
   }
-
   form {
     background: white;
     padding: 20px 25px;
@@ -31,14 +29,12 @@
     box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
     margin-bottom: 30px;
   }
-
   label {
     display: block;
     margin: 15px 0 5px;
     font-weight: 600;
     color: #34495e;
   }
-
   select, input[type="number"] {
     width: 100%;
     padding: 8px 10px;
@@ -47,13 +43,11 @@
     font-size: 1rem;
     transition: border-color 0.3s;
   }
-
   select:focus, input[type="number"]:focus {
     outline: none;
     border-color: #2980b9;
     box-shadow: 0 0 8px rgba(41, 128, 185, 0.3);
   }
-
   button {
     margin-top: 25px;
     padding: 12px 20px;
@@ -67,11 +61,9 @@
     cursor: pointer;
     transition: background 0.3s;
   }
-
   button:hover {
     background: #1c5980;
   }
-
   .result {
     margin-top: 25px;
     padding: 15px 20px;
@@ -81,13 +73,15 @@
     font-weight: 700;
     color: #3c763d;
     font-size: 1.1rem;
-    min-height: 40px;
+    min-height: 50px;
+    white-space: pre-wrap;
   }
-
   canvas {
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+    max-width: 100%;
+    height: 350px !important;
   }
 </style>
 </head>
@@ -153,7 +147,7 @@
 
 <div class="result" id="result"></div>
 
-<canvas id="grafica" width="700" height="350"></canvas>
+<canvas id="grafica"></canvas>
 
 <script>
   const tipoSelect = document.getElementById('tipo');
@@ -190,7 +184,7 @@
     }
   });
 
-  // Función para invertir desigualdad (al multiplicar por negativo)
+  // Invertir desigualdad al multiplicar por negativo
   function invertirInequ(ineq) {
     switch(ineq) {
       case '<': return '>';
@@ -201,13 +195,12 @@
     }
   }
 
-  // Función para evaluar la función en x para lineal o cuadrática
+  // Evaluar función en x
   function f(x, tipo, a, b, c=0) {
-    if (tipo === 'lineal') return a*x + b;
-    else return a*x*x + b*x + c;
+    return tipo === 'lineal' ? a*x + b : a*x*x + b*x + c;
   }
 
-  // Generar puntos para graficar en intervalo
+  // Generar puntos para graficar
   function generarPuntos(tipo, a, b, c=0, xmin=-10, xmax=10, pasos=500) {
     const xs = [];
     const ys = [];
@@ -218,6 +211,24 @@
       ys.push(f(x, tipo, a, b, c));
     }
     return {xs, ys};
+  }
+
+  // Función para verificar desigualdad: devuelve true si y satisface ineq 0
+  function cumpleDesigualdad(y, ineq) {
+    switch(ineq) {
+      case '<': return y < 0;
+      case '<=': return y <= 0;
+      case '>': return y > 0;
+      case '>=': return y >= 0;
+    }
+  }
+
+  // Crear dataset para sombrear regiones solución
+  function crearRegionSolucion(xs, ys, ineq) {
+    // Generamos dos datasets:
+    // uno con puntos donde la desigualdad se cumple (y) y otro con null donde no
+    const datosRegion = ys.map(y => cumpleDesigualdad(y, ineq) ? y : null);
+    return datosRegion;
   }
 
   form.addEventListener('submit', (e) => {
@@ -248,24 +259,39 @@
         signo = invertirInequ(ineq);
       }
 
-      let sol = '';
+      let solTexto = '';
       switch(signo) {
         case '<':
-          sol = `x < ${x_sol.toFixed(4)}`;
+          solTexto = `x < ${x_sol.toFixed(4)}`;
           break;
         case '<=':
-          sol = `x ≤ ${x_sol.toFixed(4)}`;
+          solTexto = `x ≤ ${x_sol.toFixed(4)}`;
           break;
         case '>':
-          sol = `x > ${x_sol.toFixed(4)}`;
+          solTexto = `x > ${x_sol.toFixed(4)}`;
           break;
         case '>=':
-          sol = `x ≥ ${x_sol.toFixed(4)}`;
+          solTexto = `x ≥ ${x_sol.toFixed(4)}`;
           break;
       }
-      resultDiv.textContent = `El intervalo que satisface la desigualdad es: ${sol}`;
+      resultDiv.textContent = `El intervalo que satisface la desigualdad es:\n${solTexto}`;
 
-      // Graficar función y sombrear solución
-      const {xs, ys} = generarPuntos('lineal', a, b);
+      // Generar puntos para graficar
+      const xmin = x_sol - 10;
+      const xmax = x_sol + 10;
+      const {xs, ys} = generarPuntos('lineal', a, b, 0, xmin, xmax);
 
-      // Determinar los índices que cumplen la desigualdad f
+      // Dataset función principal
+      const dataFunc = {
+        label: 'f(x)',
+        data: xs.map((x,i) => ({x: x, y: ys[i]})),
+        borderColor: '#2980b9',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.1,
+        pointRadius: 0,
+      };
+
+      // Dataset región solución (sombreado)
+      const regionYs = ys.map(y => cumpleDesigualdad(y, ineq) ? y : null);
+      const data
