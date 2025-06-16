@@ -5,11 +5,79 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Solver de Desigualdades Lineales y Cuadráticas</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-  label, select, input { display: block; margin: 10px 0; }
-  input[type="number"] { width: 100px; }
-  button { margin-top: 15px; padding: 10px 15px; }
-  .result { margin-top: 20px; font-weight: bold; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
+    background: #f0f4f8;
+    color: #333;
+  }
+
+  h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+  }
+
+  form {
+    background: white;
+    padding: 20px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+  }
+
+  label {
+    display: block;
+    margin: 15px 0 5px;
+    font-weight: 600;
+    color: #34495e;
+  }
+
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1.8px solid #a3b1c6;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+  }
+
+  select:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 8px rgba(41, 128, 185, 0.3);
+  }
+
+  button {
+    margin-top: 25px;
+    padding: 12px 20px;
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: #2980b9;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  button:hover {
+    background: #1c5980;
+  }
+
+  .result {
+    margin-top: 25px;
+    padding: 15px 20px;
+    background: #dff0d8;
+    border-left: 6px solid #3c763d;
+    border-radius: 6px;
+    font-weight: 700;
+    color: #3c763d;
+    font-size: 1.1rem;
+    min-height: 40px;
+  }
 </style>
 </head>
 <body>
@@ -85,7 +153,6 @@
     if (tipoSelect.value === 'lineal') {
       coefLineal.style.display = 'block';
       coefCuadratica.style.display = 'none';
-      // Make lineal inputs required
       document.getElementById('a_lineal').required = true;
       document.getElementById('b_lineal').required = true;
       document.getElementById('a_cuad').required = false;
@@ -94,7 +161,6 @@
     } else {
       coefLineal.style.display = 'none';
       coefCuadratica.style.display = 'block';
-      // Make cuadratic inputs required
       document.getElementById('a_lineal').required = false;
       document.getElementById('b_lineal').required = false;
       document.getElementById('a_cuad').required = true;
@@ -122,13 +188,9 @@
         return;
       }
 
-      // Resolver ax + b < 0 (o con otras desigualdades)
-      // Despejamos x: x < -b/a (según el signo de a y el tipo de desigualdad)
-
       let x_sol = -b / a;
       let sol = '';
 
-      // Para invertir desigualdad si a < 0
       function invertirInequ(ineq) {
         switch(ineq) {
           case '<': return '>';
@@ -174,7 +236,6 @@
       const discriminante = b*b - 4*a*c;
       let sol = '';
 
-      // Función para invertir desigualdad al multiplicar por negativo
       function invertirInequ(ineq) {
         switch(ineq) {
           case '<': return '>';
@@ -186,7 +247,6 @@
       }
 
       if (discriminante < 0) {
-        // No raíces reales
         if ((a > 0 && (ineq === '<' || ineq === '<=')) ||
             (a < 0 && (ineq === '>' || ineq === '>='))) {
           sol = 'La desigualdad es verdadera para todo x.';
@@ -194,7 +254,6 @@
           sol = 'La desigualdad no tiene solución real.';
         }
       } else if (discriminante === 0) {
-        // Una raíz real
         const x0 = -b/(2*a);
         if (ineq === '<') {
           sol = 'No hay solución (la parábola toca el eje x en un solo punto y no es menor).';
@@ -214,7 +273,6 @@
           }
         }
       } else {
-        // Dos raíces reales
         const sqrtD = Math.sqrt(discriminante);
         const x1 = (-b - sqrtD)/(2*a);
         const x2 = (-b + sqrtD)/(2*a);
@@ -238,7 +296,6 @@
               break;
           }
         } else {
-          // a < 0, la parábola abre hacia abajo, las desigualdades cambian
           switch(ineq) {
             case '<':
               sol = `x ∈ (-∞, ${menor.toFixed(4)}) ∪ (${mayor.toFixed(4)}, ∞)`;
@@ -263,4 +320,3 @@
 
 </body>
 </html>
-
